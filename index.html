@@ -179,7 +179,7 @@
     let modelRoot=new THREE.Group(); scene.add(modelRoot);
 
     // === Subzone classification ===
-    /** @type {Map<string,{cat:string, tag:string, color:number, orig?:{emissive:THREE.Color,color:THREE.Color}}>} */
+    /** @type {Map<string,{cat:string, tag:string, color:number}>} */
     const meta = new Map();
     const CAT_COLORS = {
       flap: 0x60a5fa, spoiler: 0xfbbf24, slat: 0x34d399, door: 0xa78bfa,
@@ -193,24 +193,42 @@
       const isR = /(^|[^a-z])(r|right|der|rh)([^a-z]|$)/.test(n);
       const num = (n.match(/(\d+)/)||[])[1] || "";
       const mk = (cat,tag)=>({cat, tag, color: CAT_COLORS[cat]});
-      if(/\bflap/.test(n)) return mk("flap", (isL?"L":"")+ (isR?"R":"")+ (num?` #${num}`:""));
-      if(/\bspoiler/.test(n)|/\bspdbrk|\bspoi/.test(n)) return mk("spoiler",(isL?"L":"")+(isR?"R":"")+(num?` #${num}`:""));
+      if(/\bflap/.test(n)) return mk("flap", (isL?"L":"")+(isR?"R":"")+(num?` #${num}`:""));
+      if(/\b(spoiler|spdbrk|spoi)\b/.test(n)) return mk("spoiler",(isL?"L":"")+(isR?"R":"")+(num?` #${num}`:""));
       if(/\bslat/.test(n)) return mk("slat",(isL?"L":"")+(isR?"R":"")+(num?` #${num}`:""));
-      if(/\bdoor|\bpuerta|\b1l|\b1r|\b2l|\b2r/.test(n)) return mk("door", n.match(/\b(1l|1r|2l|2r)\b/i)?.[1]?.toUpperCase()||"");
-      if(/\bnose.*gear|\bng|\bnlg|\bfront.*gear/.test(n)) return mk("gear_nose","NG");
-      if(/\bmain.*gear|\bmlg/.test(n)){ if(isL) return mk("gear_left","MLG-L"); if(isR) return mk("gear_right","MLG-R"); }
-      if(/\bengine|\bmotor|\bprturb/.test(n)){ if(isL) return mk("engine_left","ENG-L"); if(isR) return mk("engine_right","ENG-R"); }
-      if(/\bwing|\bala/.test(n)){ if(isL) return mk("wing_left","Wing-L"); if(isR) return mk("wing_right","Wing-R"); }
-      if(/\bfuselage|\bfuse|\bfus/.test(n)) return mk("fuselage","Fuselage");
-      if(/\btail|\bempennage|\bestabilizer|\brudder/.test(n)) return mk("tail","Tail");
+      if(/\b(door|puerta|1l|1r|2l|2r)\b/.test(n)) return mk("door", n.match(/\b(1l|1r|2l|2r)\b/i)?.[1]?.toUpperCase()||"");
+      if(/\bnose.*gear|\bng\b|\bnlg\b|\bfront.*gear/.test(n)) return mk("gear_nose","NG");
+      if(/\bmain.*gear|\bmlg\b/.test(n)){ if(isL) return mk("gear_left","MLG-L"); if(isR) return mk("gear_right","MLG-R"); return mk("gear_left","MLG"); }
+      if(/\b(engine|motor)\b/.test(n)){ if(isL) return mk("engine_left","ENG-L"); if(isR) return mk("engine_right","ENG-R"); }
+      if(/\b(wing|ala)\b/.test(n)){ if(isL) return mk("wing_left","Wing-L"); if(isR) return mk("wing_right","Wing-R"); }
+      if(/\b(fuselage|fuse|fus)\b/.test(n)) return mk("fuselage","Fuselage");
+      if(/\b(tail|empennage|stabilizer|rudder)\b/.test(n)) return mk("tail","Tail");
       return null;
     }
 
     // Highlight helpers
-    const originals=new Map();
-    function ensureOrig(m){ if(!originals.has(m.uuid)){ const mat=m.material; originals.set(m.uuid,{ emissive: mat?.emissive?.clone?.()||new THREE.Color(0), color: mat?.color?.clone?.()||new THREE.Color(1,1,1)}); } }
-    function setHover(mesh,on){ if(!mesh?.material) return; ensureOrig(mesh); const o=originals.get(mesh.uuid); if(on){ if(mesh.material.color) mesh.material.color.lerp(new THREE.Color(0xfde047),0.6);} else { if(mesh.material.color && o?.color) mesh.material.color.copy(o.color);} }
-    function setSelect(mesh,on){ if(!mesh?.material) return; ensureOrig(mesh); const o=originals.get(mesh.uuid); if(on){ if(mesh.material.emissive) mesh.material.emissive.setHex(0x22d3ee);} else { if(mesh.material.emissive && o?.emissive) mesh.material.emissive.copy(o.emissive);} }
+    const originals=new Map(); // uuid -> {emissive:THREE.Color,color:THREE.Color}
+    function ensureOrig(m){
+      if(!originals.has(m.uuid)){
+        const mat=m.material;
+        originals.set(m.uuid,{
+          emissive: mat?.emissive?.clone?.()||new THREE.Color(0),
+          color: mat?.color?.clone?.()||new THREE.Color(1,1,1)
+        });
+      }
+    }
+    function setHover(mesh,on){
+      if(!mesh?.material) return; ensureOrig(mesh);
+      const o=originals.get(mesh.uuid);
+      if(on){ if(mesh.material.color) mesh.material.color.lerp(new THREE.Color(0xfde047),0.6); }
+      else { if(mesh.material.color && o?.color) mesh.material.color.copy(o.color); }
+    }
+    function setSelect(mesh,on){
+      if(!mesh?.material) return; ensureOrig(mesh);
+      const o=originals.get(mesh.uuid);
+      if(on){ if(mesh.material.emissive) mesh.material.emissive.setHex(0x22d3ee); }
+      else { if(mesh.material.emissive && o?.emissive) mesh.material.emissive.copy(o.emissive); }
+    }
     function paintCategory(mesh, catOn){
       const m = meta.get(mesh.uuid); if(!m || !mesh.material) return;
       ensureOrig(mesh);
@@ -221,20 +239,19 @@
 
     // Raycaster & interactions
     let COLOR_MODE=false;
-    let INTER=null, SEL=null;
     function onPointerMove(e){
       const r=canvas.getBoundingClientRect();
       mouse.x=((e.clientX-r.left)/r.width)*2-1; mouse.y= -((e.clientY-r.top)/r.height)*2+1;
       raycaster.setFromCamera(mouse,camera);
       const hit = raycaster.intersectObjects(modelRoot.children,true).find(i=>i.object.isMesh);
       if(hit && hit.object){
-        if(INTER!==hit.object){
-          if(INTER) setHover(INTER,false);
-          INTER=hit.object; if(!COLOR_MODE) setHover(INTER,true);
-          showHover(e.clientX,e.clientY,INTER);
-        }else showHover(e.clientX,e.clientY,INTER);
+        if(INTERSECTED!==hit.object){
+          if(INTERSECTED) setHover(INTERSECTED,false);
+          INTERSECTED=hit.object; if(!COLOR_MODE) setHover(INTERSECTED,true);
+          showHover(e.clientX,e.clientY,INTERSECTED);
+        }else showHover(e.clientX,e.clientY,INTERSECTED);
       }else{
-        if(INTER) setHover(INTER,false); INTER=null; hoverbox.style.display="none";
+        if(INTERSECTED) setHover(INTERSECTED,false); INTERSECTED=null; hoverbox.style.display="none";
       }
     }
     function onClick(e){
@@ -243,12 +260,12 @@
       raycaster.setFromCamera(mouse,camera);
       const hit = raycaster.intersectObjects(modelRoot.children,true).find(i=>i.object.isMesh);
       if(hit){
-        if(SEL && SEL!==hit.object) setSelect(SEL,false);
-        SEL=hit.object; setSelect(SEL,true);
-        toast(`Seleccionado: ${SEL.name||SEL.uuid}`);
+        if(SELECTED && SELECTED!==hit.object) setSelect(SELECTED,false);
+        SELECTED=hit.object; setSelect(SELECTED,true);
+        toast(`Seleccionado: ${SELECTED.name||SELECTED.uuid}`);
       }
     }
-    function onDblClick(){ if(SEL) fitToObject(SEL,2.0); else fitModel(); }
+    function onDblClick(){ if(SELECTED){ fitToObject(SELECTED,2.0); } else fitModel(); }
 
     canvas.addEventListener("mousemove", onPointerMove);
     canvas.addEventListener("click", onClick);
@@ -305,7 +322,7 @@
         row.addEventListener("click",(ev)=>{
           const act = ev.target.closest("button")?.dataset.act; if(!act) return;
           const m=findMesh(it.meshUuid);
-          if(act==="focus" && m){ SEL=m; setSelect(m,true); fitToObject(m,2.0); }
+          if(act==="focus" && m){ SELECTED=m; setSelect(m,true); fitToObject(m,2.0); }
           if(act==="pulse" && m){ let n=0; const t=setInterval(()=>{ setHover(m, n%2===0); if(++n>5){ clearInterval(t); setHover(m,false); } },220); }
           if(act==="del"){ const i=state.items.findIndex(x=>x.id===it.id); if(i>-1){ state.items.splice(i,1); save(); renderList(); } }
         });
@@ -316,10 +333,10 @@
 
     // Bind PN/SN
     $("#btnBind").addEventListener("click", ()=>{
-      if(!SEL){ toast("Seleccioná un mesh primero"); return; }
+      if(!SELECTED){ toast("Seleccioná un mesh primero"); return; }
       const pn=$("#pn").value.trim(), sn=$("#sn").value.trim(), desc=$("#desc").value.trim();
       if(!pn){ toast("Ingresá al menos el PN"); return; }
-      const item={ id:uid(), pn, sn, desc, meshUuid:SEL.uuid, meshName: SEL.name||"Mesh" };
+      const item={ id:uid(), pn, sn, desc, meshUuid:SELECTED.uuid, meshName: SELECTED.name||"Mesh" };
       state.items.unshift(item); save(); renderList();
       $("#pn").value=""; $("#sn").value=""; $("#desc").value="";
       toast("Asociado");
@@ -367,14 +384,13 @@
     $("#btnFocusDoors").addEventListener("click", ()=> focusByCats(["door"]));
     $("#btnFocusGear").addEventListener("click", ()=> focusByCats(["gear_nose","gear_left","gear_right"]));
 
-    // Load model
+    // ===== Auto-load model from public URLs =====
     const CANDIDATES=[
       "https://raw.githubusercontent.com/Flightradar24/fr24-3d-models/master/models/Boeing_757-200/scene.gltf",
       "https://raw.githubusercontent.com/Flightradar24/fr24-3d-models/master/models/Boeing_757-200/Boeing_757-200.gltf",
       "https://raw.githubusercontent.com/amnesica/BelugaProject-3D-Models/main/models/Boeing_757-200/scene.gltf",
       "https://raw.githubusercontent.com/amnesica/BelugaProject-3D-Models/main/models/Boeing_757-200/Boeing_757-200.gltf"
     ];
-    const originals=new Map();
 
     async function loadModelFrom(url){
       statusEl.textContent="Cargando: "+url;
@@ -389,15 +405,13 @@
             if(!o.name) o.name = o.parent?.name || "Mesh";
             const cls = classify(o.name);
             if(cls){ meta.set(o.uuid, cls); }
-            // snapshot original colors
-            ensureOrig(o);
+            ensureOrig(o); // snapshot original colors
           }
         });
         modelRoot.add(root);
         fitModel();
         statusEl.textContent="Modelo cargado";
         toast("Modelo cargado y subzonas clasificadas");
-        // if color mode enabled, apply
         if(COLOR_MODE){ modelRoot.traverse(o=>{ if(o.isMesh){ const m=meta.get(o.uuid); if(m) paintCategory(o,true); } }); }
         return true;
       }catch(err){ console.warn("Falló", url, err); return false; }
