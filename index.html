@@ -3,45 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>B757-200 3D — órbita + mover/rotar/escalar</title>
+  <title>Boeing 757-200 — Visor 3D (auto)</title>
   <style>
-    :root{--bg:#0b1220;--ui:#0f172a;--txt:#e5e7eb;--mut:#94a3b8;--bd:#1f2937;--accent:#22d3ee}
+    :root{--bg:#0b1220;--ui:#0f172a;--txt:#e5e7eb;--mut:#94a3b8;--bd:#1f2937}
     *{box-sizing:border-box} html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,Segoe UI,Roboto,Arial}
     header{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--ui);border-bottom:1px solid var(--bd)}
     header h1{margin:0;font-size:16px}
-    .bar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-    button{border:1px solid var(--bd);background:#0b1220;color:var(--txt);padding:8px 12px;border-radius:10px;cursor:pointer}
-    .btn-on{border-color:#0ea5e9;box-shadow:0 0 0 1px #0ea5e955 inset}
-    .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--bd);color:var(--mut)}
+    .pill{margin-left:auto;font-size:12px;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--bd);color:var(--mut)}
     #wrap{position:relative;height:calc(100% - 56px)}
     #three{position:absolute;inset:0;display:block}
-    #hover{position:absolute;pointer-events:none;display:none;background:#0b1220;border:1px solid var(--bd);padding:8px 10px;border-radius:10px;font-size:12px;min-width:180px}
     #help{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
+    .mini{font-size:12px;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--bd);color:var(--mut)}
   </style>
 </head>
 <body>
   <header>
     <h1>Boeing 757-200 — Visor 3D</h1>
-    <span class="pill" id="status">Cargando modelo…</span>
-    <div class="bar">
-      <button id="btnT" title="Mover (Translate) [1]">Mover</button>
-      <button id="btnR" title="Rotar (Rotate) [2]">Rotar</button>
-      <button id="btnS" title="Escalar (Scale) [3]">Escalar</button>
-      <button id="btnSpace" title="Alternar espacio Local/Mundo">Espacio: Local</button>
-      <button id="btnSnap" title="Snapping traslación/rotación (tecla Ctrl)">Snap: Off</button>
-      <button id="btnReset" title="Reencuadrar [F]">Reencuadrar</button>
-    </div>
+    <span id="status" class="pill">Cargando modelo…</span>
   </header>
 
   <div id="wrap">
     <canvas id="three"></canvas>
-    <div id="hover"></div>
     <div id="help">
-      <span class="pill">Botón izq: orbitar</span>
-      <span class="pill">Rueda: zoom</span>
-      <span class="pill">Botón der / Shift+Rueda: paneo</span>
-      <span class="pill">1/2/3: Mover/Rotar/Escalar · F: centrar</span>
+      <span class="mini">Arrastrá: orbitar</span>
+      <span class="mini">Rueda: zoom</span>
+      <span class="mini">Botón derecho / Shift+Rueda: pan</span>
+      <span class="mini">Doble clic: centrar</span>
     </div>
   </div>
 
@@ -50,62 +38,53 @@
     import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
     import { GLTFLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
     import { DRACOLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js";
-    import { TransformControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/TransformControls.js";
 
-    // --- DOM helpers
-    const $ = (q,root=document)=>root.querySelector(q);
-    const statusEl = $("#status");
-    const hover = $("#hover");
+    // --- DOM
+    const statusEl = document.getElementById("status");
+    const canvas = document.getElementById("three");
 
-    // --- Renderer/Scene/Camera
-    const canvas = $("#three");
+    // --- Three.js básico
     const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0b1220);
 
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 5000);
-    camera.position.set(4, 2, 7);
+    camera.position.set(5, 2.2, 8);
 
-    // Lights
+    // Luces
     scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 0.9));
     const dir = new THREE.DirectionalLight(0xffffff, 1.0);
     dir.position.set(4,6,3);
     dir.castShadow = true;
     scene.add(dir);
 
-    // Ground plane (subtle)
+    // Piso sutil
     const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(400,400),
+      new THREE.PlaneGeometry(600,600),
       new THREE.MeshStandardMaterial({color:0x0a0f1a, metalness:0, roughness:1})
     );
     ground.rotation.x = -Math.PI/2;
-    ground.position.y = -0.01;
+    ground.position.y = -0.02;
     scene.add(ground);
 
-    // --- Controls
+    // Controles de órbita
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // Transform controls to mover/rotar/escalar el avión completo
-    const tControls = new TransformControls(camera, renderer.domElement);
-    scene.add(tControls);
-    tControls.setMode("translate"); // default
-    tControls.setSpace("local");
-    tControls.addEventListener("dragging-changed", e => controls.enabled = !e.value);
-
-    // --- Model root (el objeto que vamos a mover/rotar/escalar)
+    // --- Contenedor del modelo
     const modelRoot = new THREE.Group();
     scene.add(modelRoot);
 
-    // --- Load GLTF (auto)
+    // --- Loader GLTF/GLB
     const gltfLoader = new GLTFLoader();
     const draco = new DRACOLoader();
     draco.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
     gltfLoader.setDRACOLoader(draco);
 
+    // Fuentes públicas (raw GitHub es CORS-friendly)
     const CANDIDATES = [
       "https://raw.githubusercontent.com/Flightradar24/fr24-3d-models/master/models/Boeing_757-200/scene.gltf",
       "https://raw.githubusercontent.com/Flightradar24/fr24-3d-models/master/models/Boeing_757-200/Boeing_757-200.gltf",
@@ -115,32 +94,34 @@
 
     async function loadModelFrom(url){
       statusEl.textContent = "Cargando: " + url;
-      // limpiar anterior
       while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
       try{
         const gltf = await gltfLoader.loadAsync(url);
         const root = gltf.scene || gltf.scenes[0];
         root.traverse(o=>{
-          if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if(!o.name) o.name = o.parent?.name || "Mesh"; }
+          if (o.isMesh) {
+            o.castShadow = true; o.receiveShadow = true;
+            if(!o.name) o.name = o.parent?.name || "Mesh";
+          }
         });
         modelRoot.add(root);
-        // enganchar los TransformControls al modelRoot
-        tControls.attach(modelRoot);
-        fitToObject(modelRoot, 1.4);
+        fitToObject(modelRoot, 1.35);
         statusEl.textContent = "Modelo cargado";
         return true;
-      }catch(err){
-        console.warn("Falló", url, err);
+      }catch(e){
+        console.warn("Falló", url, e);
         return false;
       }
     }
 
-    async function tryAutoLoad(){
-      for(const url of CANDIDATES){ if(await loadModelFrom(url)) return; }
+    async function autoLoad(){
+      for(const url of CANDIDATES){
+        if(await loadModelFrom(url)) return;
+      }
       statusEl.textContent = "No se pudo auto-cargar (CORS/ruta).";
     }
 
-    // --- Fit helpers
+    // Centrar cámara al objeto
     function fitToObject(obj, pad=1.2){
       const box = new THREE.Box3().setFromObject(obj);
       if (box.isEmpty()) return;
@@ -154,36 +135,10 @@
       controls.target.copy(center); controls.update();
     }
 
-    // --- Hover (mostrar nombre de malla)
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    let INTERSECTED = null;
+    // Doble clic: reencuadrar
+    renderer.domElement.addEventListener("dblclick", ()=> fitToObject(modelRoot, 1.35));
 
-    function onPointerMove(e){
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      const hit = raycaster.intersectObjects(modelRoot.children, true).find(i=>i.object.isMesh);
-      if(hit && hit.object){
-        if(INTERSECTED !== hit.object){
-          INTERSECTED = hit.object;
-        }
-        showHover(e.clientX, e.clientY, INTERSECTED);
-      } else {
-        INTERSECTED = null;
-        hover.style.display = "none";
-      }
-    }
-    function showHover(x,y,mesh){
-      hover.innerHTML = `<strong>${(mesh.name||mesh.uuid)}</strong>`;
-      hover.style.display = "block";
-      const vb = $("#wrap").getBoundingClientRect();
-      hover.style.left = (x - vb.left + 12) + "px";
-      hover.style.top  = (y - vb.top  - 12) + "px";
-    }
-
-    // --- Resize + render loop
+    // Resize
     function resize(){
       const r = renderer.domElement.getBoundingClientRect();
       const w = r.width, h = r.height;
@@ -192,61 +147,17 @@
     }
     window.addEventListener("resize", resize);
 
+    // Render loop
     (function loop(){
       controls.update();
       renderer.render(scene, camera);
       requestAnimationFrame(loop);
     })();
 
-    renderer.domElement.addEventListener("mousemove", onPointerMove);
-
-    // --- UI buttons
-    const btnT = $("#btnT"), btnR = $("#btnR"), btnS = $("#btnS");
-    const btnSpace = $("#btnSpace"), btnSnap = $("#btnSnap"), btnReset = $("#btnReset");
-
-    function setMode(m){
-      tControls.setMode(m);
-      btnT.classList.toggle("btn-on", m==="translate");
-      btnR.classList.toggle("btn-on", m==="rotate");
-      btnS.classList.toggle("btn-on", m==="scale");
-    }
-    setMode("translate");
-
-    btnT.onclick = ()=> setMode("translate");
-    btnR.onclick = ()=> setMode("rotate");
-    btnS.onclick = ()=> setMode("scale");
-
-    let localSpace = true;
-    btnSpace.onclick = ()=>{
-      localSpace = !localSpace;
-      tControls.setSpace(localSpace ? "local" : "world");
-      btnSpace.textContent = "Espacio: " + (localSpace ? "Local" : "Mundo");
-    };
-
-    // Snapping: traslación/rotación cuando está activado; también funciona manteniendo Ctrl (evento interno)
-    let snapOn = false;
-    btnSnap.onclick = ()=>{
-      snapOn = !snapOn;
-      tControls.setTranslationSnap(snapOn ? 0.1 : null);   // 10 cm
-      tControls.setRotationSnap(snapOn ? THREE.MathUtils.degToRad(5) : null); // 5°
-      btnSnap.textContent = "Snap: " + (snapOn ? "On" : "Off");
-    };
-
-    btnReset.onclick = ()=> fitToObject(modelRoot, 1.4);
-
-    // --- Atajos de teclado
-    window.addEventListener("keydown", (e)=>{
-      if(e.target && ["INPUT","TEXTAREA"].includes(e.target.tagName)) return;
-      if(e.code==="Digit1") setMode("translate");
-      if(e.code==="Digit2") setMode("rotate");
-      if(e.code==="Digit3") setMode("scale");
-      if(e.code==="KeyF")  fitToObject(modelRoot, 1.4);
-    });
-
-    // --- Init
+    // Init
     function init(){
       resize();
-      tryAutoLoad();
+      autoLoad();
     }
     init();
   </script>
