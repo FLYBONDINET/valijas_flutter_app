@@ -2,390 +2,111 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mapa de partes 3D — B757-200 (Auto + Subzonas)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>B757-200 3D — órbita + mover/rotar/escalar</title>
   <style>
-    :root{
-      --bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#94a3b8;--accent:#22d3ee;--accent2:#a78bfa;--border:#1f2937;--danger:#ef4444;
-      --cat-flap:#60a5fa;--cat-spoiler:#fbbf24;--cat-slat:#34d399;--cat-door:#a78bfa;--cat-gearN:#f472b6;--cat-gearL:#f87171;--cat-gearR:#f59e0b;
-      --cat-engineL:#22d3ee;--cat-engineR:#06b6d4;--cat-wingL:#86efac;--cat-wingR:#bef264;--cat-fuselage:#cbd5e1;--cat-tail:#fdba74;
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,Segoe UI,Roboto,Arial}
-    header{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
-    header h1{font-size:16px;margin:0}
-    .wrap{display:grid;grid-template-columns:380px 1fr;min-height:calc(100vh - 56px)}
-    aside{border-right:1px solid var(--border);background:var(--panel)}
-    .sec{padding:12px 14px;border-bottom:1px solid var(--border)}
-    .sec h2{margin:0 0 8px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-    label{display:block;font-size:12px;color:var(--muted);margin:.4rem 0 .25rem}
-    input,textarea,button{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:#0b1220;color:var(--text)}
-    textarea{min-height:64px;resize:vertical}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    button{cursor:pointer}
-    .btn{border:1px solid var(--border);background:#0b1220}
-    .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#041014;font-weight:700}
-    .btn-ghost{background:transparent}
-    .list{max-height:34vh;overflow:auto;margin-top:8px}
-    .item{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;border-top:1px solid var(--border)}
-    .item:hover{background:#0b1220}
-    .badge{font-size:11px;border:1px solid var(--border);padding:3px 7px;border-radius:999px;color:var(--muted);background:transparent;cursor:pointer}
-    main{position:relative}
-    #viewer{position:relative;height:calc(100vh - 56px);}
-    #three{position:absolute;inset:0}
-    #hoverbox{position:absolute;pointer-events:none;display:none;background:#0b1220;border:1px solid var(--border);padding:8px 10px;border-radius:10px;font-size:12px;min-width:200px}
-    .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--border);color:var(--muted)}
-    #overlay{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
-    .toast{position:fixed;right:12px;bottom:12px;background:#0b1220;border:1px solid var(--border);padding:8px 10px;border-radius:10px;color:var(--text);display:none}
-    .tip{font-size:12px;color:var(--muted)}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .kv{display:flex;align-items:center;gap:8px;margin:4px 0}
-    .sw{width:14px;height:14px;border-radius:3px;border:1px solid var(--border);display:inline-block}
-    .toggle{display:flex;align-items:center;gap:8px}
-    .toggle input{width:auto}
-    @media (max-width: 980px){.wrap{grid-template-columns:1fr}#viewer{height:60vh}}
+    :root{--bg:#0b1220;--ui:#0f172a;--txt:#e5e7eb;--mut:#94a3b8;--bd:#1f2937;--accent:#22d3ee}
+    *{box-sizing:border-box} html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,Segoe UI,Roboto,Arial}
+    header{display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--ui);border-bottom:1px solid var(--bd)}
+    header h1{margin:0;font-size:16px}
+    .bar{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+    button{border:1px solid var(--bd);background:#0b1220;color:var(--txt);padding:8px 12px;border-radius:10px;cursor:pointer}
+    .btn-on{border-color:#0ea5e9;box-shadow:0 0 0 1px #0ea5e955 inset}
+    .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:#0b1220;border:1px solid var(--bd);color:var(--mut)}
+    #wrap{position:relative;height:calc(100% - 56px)}
+    #three{position:absolute;inset:0;display:block}
+    #hover{position:absolute;pointer-events:none;display:none;background:#0b1220;border:1px solid var(--bd);padding:8px 10px;border-radius:10px;font-size:12px;min-width:180px}
+    #help{position:absolute;left:12px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap}
   </style>
 </head>
 <body>
   <header>
-    <h1>Mapa de partes 3D — Boeing 757-200</h1>
-    <span class="pill" id="modelStatus">Cargando modelo…</span>
-    <div style="margin-left:auto;display:flex;gap:8px">
-      <button id="btnExport" class="btn">Exportar JSON</button>
-      <button id="btnImport" class="btn">Importar JSON</button>
-      <input id="importFile" type="file" accept="application/json" hidden>
+    <h1>Boeing 757-200 — Visor 3D</h1>
+    <span class="pill" id="status">Cargando modelo…</span>
+    <div class="bar">
+      <button id="btnT" title="Mover (Translate) [1]">Mover</button>
+      <button id="btnR" title="Rotar (Rotate) [2]">Rotar</button>
+      <button id="btnS" title="Escalar (Scale) [3]">Escalar</button>
+      <button id="btnSpace" title="Alternar espacio Local/Mundo">Espacio: Local</button>
+      <button id="btnSnap" title="Snapping traslación/rotación (tecla Ctrl)">Snap: Off</button>
+      <button id="btnReset" title="Reencuadrar [F]">Reencuadrar</button>
     </div>
   </header>
 
-  <div class="wrap">
-    <aside>
-      <div class="sec">
-        <h2>Subzonas (auto)</h2>
-        <div class="toggle"><input type="checkbox" id="chkColorCats"><label for="chkColorCats">Mostrar colores por subzona</label></div>
-        <div class="grid2" style="margin-top:6px">
-          <div class="kv"><span class="sw" style="background:var(--cat-flap)"></span><span>Flaps</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-spoiler)"></span><span>Spoilers</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-slat)"></span><span>Slats</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-door)"></span><span>Puertas 1L/1R/2L/2R</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-gearN)"></span><span>Tren Nariz</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-gearL)"></span><span>Tren Principal Izq.</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-gearR)"></span><span>Tren Principal Der.</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-engineL)"></span><span>Motor Izq.</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-engineR)"></span><span>Motor Der.</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-wingL)"></span><span>Ala Izq.</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-wingR)"></span><span>Ala Der.</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-fuselage)"></span><span>Fuselaje</span></div>
-          <div class="kv"><span class="sw" style="background:var(--cat-tail)"></span><span>Empenaje</span></div>
-        </div>
-        <div class="grid2" style="margin-top:10px">
-          <button id="btnFocusLeft" class="btn">Ala Izq.</button>
-          <button id="btnFocusRight" class="btn">Ala Der.</button>
-          <button id="btnFocusFlapsL" class="btn">Flaps Izq.</button>
-          <button id="btnFocusFlapsR" class="btn">Flaps Der.</button>
-          <button id="btnFocusDoors" class="btn">Puertas</button>
-          <button id="btnFocusGear" class="btn">Trenes</button>
-        </div>
-        <p class="tip" style="margin-top:8px">Clasificación heurística por nombres de mallas (mesh). Puede variar según el modelo.</p>
-      </div>
-
-      <div class="sec">
-        <h2>Asignación PN/SN</h2>
-        <div class="row">
-          <div>
-            <label>Número de parte</label>
-            <input id="pn" placeholder="Ej. 65-12345-9" />
-          </div>
-          <div>
-            <label>Número de serie</label>
-            <input id="sn" placeholder="Ej. S/N 00428" />
-          </div>
-        </div>
-        <label>Descripción (opcional)</label>
-        <textarea id="desc" placeholder="Ej. Spoiler panel LH #3"></textarea>
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="btnBind" class="btn-primary">Asociar al mesh seleccionado</button>
-          <button id="btnClearForm" class="btn">Limpiar</button>
-        </div>
-        <p class="tip">Clic en una parte del avión para seleccionarla. Doble clic: centrar.</p>
-      </div>
-
-      <div class="sec">
-        <h2>Buscar</h2>
-        <div style="display:flex;gap:8px">
-          <input id="q" placeholder="Buscar PN / SN / desc / mesh / subzona" />
-          <button id="btnClearQ" class="btn">×</button>
-        </div>
-      </div>
-
-      <div class="sec">
-        <h2>Listado</h2>
-        <div id="list" class="list"></div>
-        <div id="empty" class="tip" style="display:none">No hay ítems todavía.</div>
-      </div>
-    </aside>
-
-    <main>
-      <div id="viewer">
-        <canvas id="three"></canvas>
-        <div id="overlay">
-          <span class="pill">Click: seleccionar</span>
-          <span class="pill">Shift + rueda: pan</span>
-          <span class="pill">Doble clic: centrar</span>
-        </div>
-        <div id="hoverbox"></div>
-      </div>
-    </main>
+  <div id="wrap">
+    <canvas id="three"></canvas>
+    <div id="hover"></div>
+    <div id="help">
+      <span class="pill">Botón izq: orbitar</span>
+      <span class="pill">Rueda: zoom</span>
+      <span class="pill">Botón der / Shift+Rueda: paneo</span>
+      <span class="pill">1/2/3: Mover/Rotar/Escalar · F: centrar</span>
+    </div>
   </div>
-
-  <div id="toast" class="toast"></div>
 
   <script type="module">
     import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
     import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
     import { GLTFLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
     import { DRACOLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/DRACOLoader.js";
+    import { TransformControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/TransformControls.js";
 
+    // --- DOM helpers
     const $ = (q,root=document)=>root.querySelector(q);
-    const toast=(m)=>{ const t=$("#toast"); t.textContent=m; t.style.display="block"; setTimeout(()=>t.style.display="none",1500); };
-    const esc = (s)=> String(s||"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
-    const STORAGE_KEY="b757_parts_3d_auto_sub_v1";
-    const state={ items:[] };
-    const uid=()=>Math.random().toString(36).slice(2,8)+Date.now().toString(36).slice(-4);
-    const save=()=>localStorage.setItem(STORAGE_KEY,JSON.stringify(state.items));
-    const load=()=>{ try{ const r=localStorage.getItem(STORAGE_KEY); if(r){ state.items=JSON.parse(r)||[]; } }catch{} };
+    const statusEl = $("#status");
+    const hover = $("#hover");
 
-    // Three.js setup
-    const canvas=$("#three");
-    const renderer=new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
-    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-    const scene=new THREE.Scene(); scene.background=new THREE.Color(0x0b1220);
-    const camera=new THREE.PerspectiveCamera(60,1,0.1,5000); camera.position.set(4,2,6);
-    const controls=new OrbitControls(camera, renderer.domElement); controls.enableDamping=true;
-    scene.add(new THREE.HemisphereLight(0xffffff,0x222233,0.85));
-    const dir=new THREE.DirectionalLight(0xffffff,0.9); dir.position.set(3,5,2); dir.castShadow=true; scene.add(dir);
-    const ground=new THREE.Mesh(new THREE.PlaneGeometry(400,400), new THREE.MeshStandardMaterial({color:0x0a0f1a, metalness:0, roughness:1}));
-    ground.rotation.x=-Math.PI/2; ground.position.y=-0.01; scene.add(ground);
+    // --- Renderer/Scene/Camera
+    const canvas = $("#three");
+    const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    const raycaster=new THREE.Raycaster(), mouse=new THREE.Vector2();
-    let INTERSECTED=null, SELECTED=null;
-    const hoverbox=$("#hoverbox"), statusEl=$("#modelStatus");
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0b1220);
 
-    function resize(){ const r=canvas.getBoundingClientRect(); renderer.setSize(r.width,r.height,false); camera.aspect=r.width/r.height; camera.updateProjectionMatrix(); }
-    window.addEventListener("resize", resize);
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 5000);
+    camera.position.set(4, 2, 7);
 
-    const gltfLoader=new GLTFLoader();
-    const draco=new DRACOLoader(); draco.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/"); gltfLoader.setDRACOLoader(draco);
+    // Lights
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 0.9));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.0);
+    dir.position.set(4,6,3);
+    dir.castShadow = true;
+    scene.add(dir);
 
-    let modelRoot=new THREE.Group(); scene.add(modelRoot);
+    // Ground plane (subtle)
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(400,400),
+      new THREE.MeshStandardMaterial({color:0x0a0f1a, metalness:0, roughness:1})
+    );
+    ground.rotation.x = -Math.PI/2;
+    ground.position.y = -0.01;
+    scene.add(ground);
 
-    // === Subzone classification ===
-    /** @type {Map<string,{cat:string, tag:string, color:number}>} */
-    const meta = new Map();
-    const CAT_COLORS = {
-      flap: 0x60a5fa, spoiler: 0xfbbf24, slat: 0x34d399, door: 0xa78bfa,
-      gear_nose: 0xf472b6, gear_left: 0xf87171, gear_right: 0xf59e0b,
-      engine_left: 0x22d3ee, engine_right: 0x06b6d4, wing_left: 0x86efac, wing_right: 0xbef264,
-      fuselage: 0xcbd5e1, tail: 0xfdba74
-    };
-    function classify(name){
-      const n = (name||"").toLowerCase().replace(/[^a-z0-9_ -]/g," ");
-      const isL = /(^|[^a-z])(l|left|izq|lh)([^a-z]|$)/.test(n);
-      const isR = /(^|[^a-z])(r|right|der|rh)([^a-z]|$)/.test(n);
-      const num = (n.match(/(\d+)/)||[])[1] || "";
-      const mk = (cat,tag)=>({cat, tag, color: CAT_COLORS[cat]});
-      if(/\bflap/.test(n)) return mk("flap", (isL?"L":"")+(isR?"R":"")+(num?` #${num}`:""));
-      if(/\b(spoiler|spdbrk|spoi)\b/.test(n)) return mk("spoiler",(isL?"L":"")+(isR?"R":"")+(num?` #${num}`:""));
-      if(/\bslat/.test(n)) return mk("slat",(isL?"L":"")+(isR?"R":"")+(num?` #${num}`:""));
-      if(/\b(door|puerta|1l|1r|2l|2r)\b/.test(n)) return mk("door", n.match(/\b(1l|1r|2l|2r)\b/i)?.[1]?.toUpperCase()||"");
-      if(/\bnose.*gear|\bng\b|\bnlg\b|\bfront.*gear/.test(n)) return mk("gear_nose","NG");
-      if(/\bmain.*gear|\bmlg\b/.test(n)){ if(isL) return mk("gear_left","MLG-L"); if(isR) return mk("gear_right","MLG-R"); return mk("gear_left","MLG"); }
-      if(/\b(engine|motor)\b/.test(n)){ if(isL) return mk("engine_left","ENG-L"); if(isR) return mk("engine_right","ENG-R"); }
-      if(/\b(wing|ala)\b/.test(n)){ if(isL) return mk("wing_left","Wing-L"); if(isR) return mk("wing_right","Wing-R"); }
-      if(/\b(fuselage|fuse|fus)\b/.test(n)) return mk("fuselage","Fuselage");
-      if(/\b(tail|empennage|stabilizer|rudder)\b/.test(n)) return mk("tail","Tail");
-      return null;
-    }
+    // --- Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
 
-    // Highlight helpers
-    const originals=new Map(); // uuid -> {emissive:THREE.Color,color:THREE.Color}
-    function ensureOrig(m){
-      if(!originals.has(m.uuid)){
-        const mat=m.material;
-        originals.set(m.uuid,{
-          emissive: mat?.emissive?.clone?.()||new THREE.Color(0),
-          color: mat?.color?.clone?.()||new THREE.Color(1,1,1)
-        });
-      }
-    }
-    function setHover(mesh,on){
-      if(!mesh?.material) return; ensureOrig(mesh);
-      const o=originals.get(mesh.uuid);
-      if(on){ if(mesh.material.color) mesh.material.color.lerp(new THREE.Color(0xfde047),0.6); }
-      else { if(mesh.material.color && o?.color) mesh.material.color.copy(o.color); }
-    }
-    function setSelect(mesh,on){
-      if(!mesh?.material) return; ensureOrig(mesh);
-      const o=originals.get(mesh.uuid);
-      if(on){ if(mesh.material.emissive) mesh.material.emissive.setHex(0x22d3ee); }
-      else { if(mesh.material.emissive && o?.emissive) mesh.material.emissive.copy(o.emissive); }
-    }
-    function paintCategory(mesh, catOn){
-      const m = meta.get(mesh.uuid); if(!m || !mesh.material) return;
-      ensureOrig(mesh);
-      const o = originals.get(mesh.uuid);
-      if(catOn){ if(mesh.material.color) mesh.material.color.setHex(m.color); }
-      else { if(mesh.material.color && o?.color) mesh.material.color.copy(o.color); }
-    }
+    // Transform controls to mover/rotar/escalar el avión completo
+    const tControls = new TransformControls(camera, renderer.domElement);
+    scene.add(tControls);
+    tControls.setMode("translate"); // default
+    tControls.setSpace("local");
+    tControls.addEventListener("dragging-changed", e => controls.enabled = !e.value);
 
-    // Raycaster & interactions
-    let COLOR_MODE=false;
-    function onPointerMove(e){
-      const r=canvas.getBoundingClientRect();
-      mouse.x=((e.clientX-r.left)/r.width)*2-1; mouse.y= -((e.clientY-r.top)/r.height)*2+1;
-      raycaster.setFromCamera(mouse,camera);
-      const hit = raycaster.intersectObjects(modelRoot.children,true).find(i=>i.object.isMesh);
-      if(hit && hit.object){
-        if(INTERSECTED!==hit.object){
-          if(INTERSECTED) setHover(INTERSECTED,false);
-          INTERSECTED=hit.object; if(!COLOR_MODE) setHover(INTERSECTED,true);
-          showHover(e.clientX,e.clientY,INTERSECTED);
-        }else showHover(e.clientX,e.clientY,INTERSECTED);
-      }else{
-        if(INTERSECTED) setHover(INTERSECTED,false); INTERSECTED=null; hoverbox.style.display="none";
-      }
-    }
-    function onClick(e){
-      const r=canvas.getBoundingClientRect();
-      mouse.x=((e.clientX-r.left)/r.width)*2-1; mouse.y= -((e.clientY-r.top)/r.height)*2+1;
-      raycaster.setFromCamera(mouse,camera);
-      const hit = raycaster.intersectObjects(modelRoot.children,true).find(i=>i.object.isMesh);
-      if(hit){
-        if(SELECTED && SELECTED!==hit.object) setSelect(SELECTED,false);
-        SELECTED=hit.object; setSelect(SELECTED,true);
-        toast(`Seleccionado: ${SELECTED.name||SELECTED.uuid}`);
-      }
-    }
-    function onDblClick(){ if(SELECTED){ fitToObject(SELECTED,2.0); } else fitModel(); }
+    // --- Model root (el objeto que vamos a mover/rotar/escalar)
+    const modelRoot = new THREE.Group();
+    scene.add(modelRoot);
 
-    canvas.addEventListener("mousemove", onPointerMove);
-    canvas.addEventListener("click", onClick);
-    canvas.addEventListener("dblclick", onDblClick);
+    // --- Load GLTF (auto)
+    const gltfLoader = new GLTFLoader();
+    const draco = new DRACOLoader();
+    draco.setDecoderPath("https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/");
+    gltfLoader.setDRACOLoader(draco);
 
-    function showHover(x,y,mesh){
-      const m = meta.get(mesh.uuid);
-      const items=state.items.filter(it=>it.meshUuid===mesh.uuid);
-      const catStr = m? `Subzona: <strong>${esc(m.cat)}</strong> ${m.tag? esc('('+m.tag+')'):''}` : "Subzona: n/d";
-      const html=[`<div style='font-weight:700;margin-bottom:4px'>${esc(mesh.name||mesh.uuid)}</div>`,
-                  `<div style='color:#94a3b8;margin-bottom:6px'>${catStr}</div>`]
-        .concat(items.map(it=>`<div>PN ${esc(it.pn)} · SN ${esc(it.sn||"-")}<br><span style='color:#94a3b8'>${esc(it.desc||"")}</span></div>`));
-      hoverbox.innerHTML=html.join("");
-      hoverbox.style.display="block";
-      const vb=$("#viewer").getBoundingClientRect(); hoverbox.style.left=(x - vb.left + 12)+"px"; hoverbox.style.top=(y - vb.top - 12)+"px";
-    }
-
-    // Fit helpers
-    function fitToObject(obj,pad=1.2){
-      const box=new THREE.Box3().setFromObject(obj); if(box.isEmpty()) return;
-      const size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
-      const maxDim=Math.max(size.x,size.y,size.z); const dist=maxDim*1.2/Math.tan((Math.PI/180)*camera.fov*0.5);
-      const dir=new THREE.Vector3(0.7,0.35,0.8).normalize();
-      camera.position.copy(center.clone().add(dir.multiplyScalar(dist*pad)));
-      camera.near=maxDim/100; camera.far=dist*10; camera.updateProjectionMatrix();
-      controls.target.copy(center); controls.update();
-    }
-    const fitModel=()=>{ if(modelRoot.children.length) fitToObject(modelRoot,1.4); };
-
-    // Sidebar list
-    function renderList(){
-      const list=$("#list"); list.innerHTML="";
-      const q=$("#q").value.trim().toLowerCase();
-      const items = state.items.filter(it=>{
-        const m = meta.get(it.meshUuid); const s = [it.pn,it.sn,it.desc,it.meshName,m?.cat,m?.tag].join(" ").toLowerCase();
-        return !q || s.includes(q);
-      });
-      $("#empty").style.display = items.length? "none":"block";
-      for(const it of items){
-        const row=document.createElement("div"); row.className="item";
-        row.innerHTML=`
-          <div>
-            <div><strong>PN ${esc(it.pn)}</strong> <span style="color:#94a3b8">· SN ${esc(it.sn||"-")}</span></div>
-            <div style="color:#94a3b8">${esc(it.desc||"(sin descripción)")}</div>
-            <div style="color:#94a3b8">↳ ${esc(it.meshName||it.meshUuid)} ${meta.get(it.meshUuid)?'· '+esc(meta.get(it.meshUuid).cat):''}</div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center">
-            <button class="badge" data-act="focus">Ir</button>
-            <button class="badge" data-act="pulse">Resaltar</button>
-            <button class="badge" data-act="del" style="color:#ef4444">Borrar</button>
-          </div>`;
-        row.addEventListener("mouseenter",()=>{ const m=findMesh(it.meshUuid); if(m) setHover(m,true); });
-        row.addEventListener("mouseleave",()=>{ const m=findMesh(it.meshUuid); if(m) setHover(m,false); });
-        row.addEventListener("click",(ev)=>{
-          const act = ev.target.closest("button")?.dataset.act; if(!act) return;
-          const m=findMesh(it.meshUuid);
-          if(act==="focus" && m){ SELECTED=m; setSelect(m,true); fitToObject(m,2.0); }
-          if(act==="pulse" && m){ let n=0; const t=setInterval(()=>{ setHover(m, n%2===0); if(++n>5){ clearInterval(t); setHover(m,false); } },220); }
-          if(act==="del"){ const i=state.items.findIndex(x=>x.id===it.id); if(i>-1){ state.items.splice(i,1); save(); renderList(); } }
-        });
-        list.appendChild(row);
-      }
-    }
-    function findMesh(uuid){ let f=null; modelRoot.traverse(o=>{ if(!f && o.uuid===uuid) f=o; }); return f; }
-
-    // Bind PN/SN
-    $("#btnBind").addEventListener("click", ()=>{
-      if(!SELECTED){ toast("Seleccioná un mesh primero"); return; }
-      const pn=$("#pn").value.trim(), sn=$("#sn").value.trim(), desc=$("#desc").value.trim();
-      if(!pn){ toast("Ingresá al menos el PN"); return; }
-      const item={ id:uid(), pn, sn, desc, meshUuid:SELECTED.uuid, meshName: SELECTED.name||"Mesh" };
-      state.items.unshift(item); save(); renderList();
-      $("#pn").value=""; $("#sn").value=""; $("#desc").value="";
-      toast("Asociado");
-    });
-    $("#btnClearForm").addEventListener("click", ()=>{ $("#pn").value=""; $("#sn").value=""; $("#desc").value=""; });
-
-    // Import/Export
-    $("#btnExport").addEventListener("click", ()=>{
-      const blob=new Blob([JSON.stringify(state.items,null,2)], {type:"application/json"});
-      const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="b757_partes_3d.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
-    });
-    $("#btnImport").addEventListener("click", ()=> $("#importFile").click());
-    $("#importFile").addEventListener("change", (e)=>{
-      const f=e.target.files?.[0]; if(!f) return;
-      const rd=new FileReader(); rd.onload=()=>{ try{ const arr=JSON.parse(String(rd.result)); if(Array.isArray(arr)){ state.items=arr.map(x=>({id:x.id||uid(), pn:String(x.pn||""), sn:String(x.sn||""), desc:String(x.desc||""), meshUuid:String(x.meshUuid||""), meshName:String(x.meshName||"")})); save(); renderList(); toast("Importado"); } else toast("Archivo inválido"); }catch{ toast("No se pudo importar"); } };
-      rd.readAsText(f);
-    });
-
-    // Search
-    $("#q").addEventListener("input", renderList);
-    $("#btnClearQ").addEventListener("click", ()=>{ $("#q").value=""; renderList(); });
-
-    // Subzone color toggle
-    $("#chkColorCats").addEventListener("change",(e)=>{
-      COLOR_MODE = e.target.checked;
-      modelRoot.traverse(o=>{
-        if(o.isMesh){
-          if(COLOR_MODE){ const m=meta.get(o.uuid); if(m) paintCategory(o,true); }
-          else { const o0=originals.get(o.uuid); if(o0 && o.material?.color) o.material.color.copy(o0.color); }
-        }
-      });
-    });
-
-    // Focus helpers
-    function focusByCats(cats){
-      const group=new THREE.Group();
-      modelRoot.traverse(o=>{ if(o.isMesh){ const m=meta.get(o.uuid); if(m && cats.includes(m.cat)) group.add(o.clone()); } });
-      if(group.children.length){ fitToObject(group,1.6); toast("Vista centrada en "+cats.join(",")); }
-      else toast("No se encontraron subzonas coincidentes en el modelo");
-    }
-    $("#btnFocusLeft").addEventListener("click", ()=> focusByCats(["wing_left","engine_left","gear_left","slat","flap","spoiler"]));
-    $("#btnFocusRight").addEventListener("click", ()=> focusByCats(["wing_right","engine_right","gear_right","slat","flap","spoiler"]));
-    $("#btnFocusFlapsL").addEventListener("click", ()=> focusByCats(["flap"]));
-    $("#btnFocusFlapsR").addEventListener("click", ()=> focusByCats(["flap"]));
-    $("#btnFocusDoors").addEventListener("click", ()=> focusByCats(["door"]));
-    $("#btnFocusGear").addEventListener("click", ()=> focusByCats(["gear_nose","gear_left","gear_right"]));
-
-    // ===== Auto-load model from public URLs =====
-    const CANDIDATES=[
+    const CANDIDATES = [
       "https://raw.githubusercontent.com/Flightradar24/fr24-3d-models/master/models/Boeing_757-200/scene.gltf",
       "https://raw.githubusercontent.com/Flightradar24/fr24-3d-models/master/models/Boeing_757-200/Boeing_757-200.gltf",
       "https://raw.githubusercontent.com/amnesica/BelugaProject-3D-Models/main/models/Boeing_757-200/scene.gltf",
@@ -393,38 +114,139 @@
     ];
 
     async function loadModelFrom(url){
-      statusEl.textContent="Cargando: "+url;
+      statusEl.textContent = "Cargando: " + url;
+      // limpiar anterior
+      while (modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
       try{
-        while(modelRoot.children.length) modelRoot.remove(modelRoot.children[0]);
-        originals.clear(); meta.clear();
         const gltf = await gltfLoader.loadAsync(url);
         const root = gltf.scene || gltf.scenes[0];
         root.traverse(o=>{
-          if(o.isMesh){
-            o.castShadow=true; o.receiveShadow=true;
-            if(!o.name) o.name = o.parent?.name || "Mesh";
-            const cls = classify(o.name);
-            if(cls){ meta.set(o.uuid, cls); }
-            ensureOrig(o); // snapshot original colors
-          }
+          if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if(!o.name) o.name = o.parent?.name || "Mesh"; }
         });
         modelRoot.add(root);
-        fitModel();
-        statusEl.textContent="Modelo cargado";
-        toast("Modelo cargado y subzonas clasificadas");
-        if(COLOR_MODE){ modelRoot.traverse(o=>{ if(o.isMesh){ const m=meta.get(o.uuid); if(m) paintCategory(o,true); } }); }
+        // enganchar los TransformControls al modelRoot
+        tControls.attach(modelRoot);
+        fitToObject(modelRoot, 1.4);
+        statusEl.textContent = "Modelo cargado";
         return true;
-      }catch(err){ console.warn("Falló", url, err); return false; }
+      }catch(err){
+        console.warn("Falló", url, err);
+        return false;
+      }
     }
 
     async function tryAutoLoad(){
       for(const url of CANDIDATES){ if(await loadModelFrom(url)) return; }
-      statusEl.textContent="No se pudo cargar automáticamente (CORS/ruta). Igual podés usar la app.";
-      toast("Intentos agotados");
+      statusEl.textContent = "No se pudo auto-cargar (CORS/ruta).";
     }
 
+    // --- Fit helpers
+    function fitToObject(obj, pad=1.2){
+      const box = new THREE.Box3().setFromObject(obj);
+      if (box.isEmpty()) return;
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const dist = maxDim * 1.25 / Math.tan((Math.PI/180)*camera.fov*0.5);
+      const dir = new THREE.Vector3(0.7, 0.35, 0.8).normalize();
+      camera.position.copy(center.clone().add(dir.multiplyScalar(dist*pad)));
+      camera.near = maxDim/100; camera.far = dist*10; camera.updateProjectionMatrix();
+      controls.target.copy(center); controls.update();
+    }
+
+    // --- Hover (mostrar nombre de malla)
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let INTERSECTED = null;
+
+    function onPointerMove(e){
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hit = raycaster.intersectObjects(modelRoot.children, true).find(i=>i.object.isMesh);
+      if(hit && hit.object){
+        if(INTERSECTED !== hit.object){
+          INTERSECTED = hit.object;
+        }
+        showHover(e.clientX, e.clientY, INTERSECTED);
+      } else {
+        INTERSECTED = null;
+        hover.style.display = "none";
+      }
+    }
+    function showHover(x,y,mesh){
+      hover.innerHTML = `<strong>${(mesh.name||mesh.uuid)}</strong>`;
+      hover.style.display = "block";
+      const vb = $("#wrap").getBoundingClientRect();
+      hover.style.left = (x - vb.left + 12) + "px";
+      hover.style.top  = (y - vb.top  - 12) + "px";
+    }
+
+    // --- Resize + render loop
+    function resize(){
+      const r = renderer.domElement.getBoundingClientRect();
+      const w = r.width, h = r.height;
+      renderer.setSize(w, h, false);
+      camera.aspect = w/h; camera.updateProjectionMatrix();
+    }
+    window.addEventListener("resize", resize);
+
+    (function loop(){
+      controls.update();
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    })();
+
+    renderer.domElement.addEventListener("mousemove", onPointerMove);
+
+    // --- UI buttons
+    const btnT = $("#btnT"), btnR = $("#btnR"), btnS = $("#btnS");
+    const btnSpace = $("#btnSpace"), btnSnap = $("#btnSnap"), btnReset = $("#btnReset");
+
+    function setMode(m){
+      tControls.setMode(m);
+      btnT.classList.toggle("btn-on", m==="translate");
+      btnR.classList.toggle("btn-on", m==="rotate");
+      btnS.classList.toggle("btn-on", m==="scale");
+    }
+    setMode("translate");
+
+    btnT.onclick = ()=> setMode("translate");
+    btnR.onclick = ()=> setMode("rotate");
+    btnS.onclick = ()=> setMode("scale");
+
+    let localSpace = true;
+    btnSpace.onclick = ()=>{
+      localSpace = !localSpace;
+      tControls.setSpace(localSpace ? "local" : "world");
+      btnSpace.textContent = "Espacio: " + (localSpace ? "Local" : "Mundo");
+    };
+
+    // Snapping: traslación/rotación cuando está activado; también funciona manteniendo Ctrl (evento interno)
+    let snapOn = false;
+    btnSnap.onclick = ()=>{
+      snapOn = !snapOn;
+      tControls.setTranslationSnap(snapOn ? 0.1 : null);   // 10 cm
+      tControls.setRotationSnap(snapOn ? THREE.MathUtils.degToRad(5) : null); // 5°
+      btnSnap.textContent = "Snap: " + (snapOn ? "On" : "Off");
+    };
+
+    btnReset.onclick = ()=> fitToObject(modelRoot, 1.4);
+
+    // --- Atajos de teclado
+    window.addEventListener("keydown", (e)=>{
+      if(e.target && ["INPUT","TEXTAREA"].includes(e.target.tagName)) return;
+      if(e.code==="Digit1") setMode("translate");
+      if(e.code==="Digit2") setMode("rotate");
+      if(e.code==="Digit3") setMode("scale");
+      if(e.code==="KeyF")  fitToObject(modelRoot, 1.4);
+    });
+
+    // --- Init
     function init(){
-      load(); renderList(); resize(); tryAutoLoad();
+      resize();
+      tryAutoLoad();
     }
     init();
   </script>
